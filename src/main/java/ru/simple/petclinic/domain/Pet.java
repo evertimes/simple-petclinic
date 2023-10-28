@@ -16,7 +16,7 @@ public class Pet {
     private LocalDateTime dateOfBirth;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "pet")
     private Set<Visit> visits = new HashSet<>();
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private PetType petType;
     @ManyToOne
     @JoinColumn(referencedColumnName = "id")
@@ -36,5 +36,14 @@ public class Pet {
 
     public void setOwner(Owner owner) {
         this.owner = owner;
+    }
+
+    @Override
+    public String toString() {
+        return "Pet{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", dateOfBirth=" + dateOfBirth +
+                '}';
     }
 }

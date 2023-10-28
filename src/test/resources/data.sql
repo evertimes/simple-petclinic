@@ -1,3 +1,5 @@
+
+
 INSERT INTO public.owner (id, address, name) VALUES (1, 'г. Рязань', 'Андрей');
 INSERT INTO public.owner (id, address, name) VALUES (2, 'г. Рязань', 'Костя');
 
