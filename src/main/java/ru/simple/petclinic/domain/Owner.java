@@ -1,16 +1,15 @@
 package ru.simple.petclinic.domain;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 @Getter
 @Setter
 public class Owner {
@@ -19,7 +18,7 @@ public class Owner {
     private String name;
     private String address;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "owner", fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "owner", fetch = FetchType.EAGER)
     private Set<Pet> pets = new HashSet<>();
 
     public Owner(long id, String name, String address) {

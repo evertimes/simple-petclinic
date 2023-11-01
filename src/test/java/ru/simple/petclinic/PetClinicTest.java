@@ -11,12 +11,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import ru.simple.petclinic.domain.Owner;
 import ru.simple.petclinic.domain.Pet;
-import ru.simple.petclinic.domain.PetType;
-import ru.simple.petclinic.domain.Visit;
 import ru.simple.petclinic.repository.OwnerRepository;
 import ru.simple.petclinic.repository.PetRepository;
-import ru.simple.petclinic.repository.PetTypeRepository;
-import ru.simple.petclinic.repository.VisitRepository;
 
 import javax.sql.DataSource;
 import java.sql.ResultSet;
@@ -28,73 +24,48 @@ import java.util.Map;
 @SpringBootTest
 class PetClinicTest {
     @Autowired
-    private VisitRepository visitRepository;
-    @Autowired
-    private PetTypeRepository petTypeRepository;
-    @Autowired
     private PetRepository petRepository;
     @Autowired
     private OwnerRepository ownerRepository;
     @Autowired
     private DataSource dataSource;
+    //Комменты уберем, версия с комментами будет тут https://www.notion.so/0122d78b0cd14392b0a70881e7cc640d?pvs=4
+
+
+
+
+
+
 
     @Test
-    @Disabled
-        //Пусть будет тут, но юзать будем data.sql
-    void init() {
-        var visit1 = visitRepository.save(new Visit(1, LocalDateTime.now(), "Боль в лапе"));
-        var visit2 = visitRepository.save(new Visit(2, LocalDateTime.now(), "Несварение"));
-        var visit3 = visitRepository.save(new Visit(3, LocalDateTime.now(), "Стрижка когтей"));
-        var visit4 = visitRepository.save(new Visit(4, LocalDateTime.now(), "Груминг"));
-        var visit5 = visitRepository.save(new Visit(5, LocalDateTime.now(), "Взятие крови на анализы"));
-        var visit6 = visitRepository.save(new Visit(6, LocalDateTime.now(), "Кастрация"));
-        var visit7 = visitRepository.save(new Visit(7, LocalDateTime.now(), "Плановый осмотр кошки"));
-        var visit8 = visitRepository.save(new Visit(8, LocalDateTime.now(), "Плановый осмотр собаки"));
-        var visit9 = visitRepository.save(new Visit(9, LocalDateTime.now(), "Плановый осмотр хомяка"));
-        var visit10 = visitRepository.save(new Visit(10, LocalDateTime.now(), "Плановый осмотр кролика"));
-        var visit11 = visitRepository.save(new Visit(11, LocalDateTime.now(), "Пропал аппетит"));
-        var visit12 = visitRepository.save(new Visit(12, LocalDateTime.now(), "Анализы"));
+    void simpleCrud(){
+        ownerRepository.save(Owner.builder().id(3).name("Evgeniy").address("my address").build());
 
-        var sobaka = petTypeRepository.save(new PetType("Собака"));
-        var koshka = petTypeRepository.save(new PetType("Кошка"));
-        var homyak = petTypeRepository.save(new PetType("Хомяк"));
-        var krolik = petTypeRepository.save(new PetType("Кролик"));
+        var owner = ownerRepository.findById(3L).get();
+        System.out.println(owner);
+        owner.setAddress("new address");
+        ownerRepository.save(owner);
 
-        var barsik = new Pet(1, "Барсик", LocalDateTime.now(), koshka);
-        barsik.addVisit(visit3);
-        barsik.addVisit(visit5);
-        barsik.addVisit(visit6);
-        barsik.addVisit(visit7);
-        barsik.addVisit(visit2);
+        System.out.println(ownerRepository.findById(3L).get());
 
-        var veniamin = new Pet(2, "Вениамин", LocalDateTime.now(), homyak);
-        veniamin.addVisit(visit12);
-        veniamin.addVisit(visit9);
+        ownerRepository.deleteById(3L);
+        System.out.println(ownerRepository.findById(3L).get());
 
-        var sharik = new Pet(3, "Шарик", LocalDateTime.now(), sobaka);
-        sharik.addVisit(visit4);
-        sharik.addVisit(visit8);
-        sharik.addVisit(visit1);
-
-        var viktor = new Pet(4, "Виктор", LocalDateTime.now(), krolik);
-        viktor.addVisit(visit10);
-        viktor.addVisit(visit11);
-
-        barsik = petRepository.save(barsik);
-        veniamin = petRepository.save(veniamin);
-        sharik = petRepository.save(sharik);
-        viktor = petRepository.save(viktor);
-
-        var andrey = new Owner(1, "Андрей", "г. Рязань");
-        andrey.addPet(barsik);
-        andrey.addPet(veniamin);
-        ownerRepository.save(andrey);
-
-        var kostya = new Owner(2, "Костя", "г. Рязань");
-        kostya.addPet(sharik);
-        kostya.addPet(viktor);
-        ownerRepository.save(kostya);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     //FetchType=eager на pet в owner
     //Представим, что мы хотим получить получить всех владельцев.
@@ -105,6 +76,21 @@ class PetClinicTest {
         Assertions.assertThat(true).isTrue();
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     //Попробуем поставить fetchType = Lazy, что бы питомцы не тащились, только когда нужно.
     //Получили один запрос на владельца. Все ок.
     @Test
@@ -114,6 +100,24 @@ class PetClinicTest {
     }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     //Допустим теперь мы захотели посмотреть питомцев. Смотрим сколько у каждого владельца есть питомцев.
     //Тест падает - LazyInitException, т.к. у нас уже закрыта транзакция.
     @Test
@@ -121,6 +125,19 @@ class PetClinicTest {
         ownerRepository.findAll().forEach(e -> e.getPets().size());
         Assertions.assertThat(true).isTrue();
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     //Для таких целей можно использовать аннотацию transcational, которая позволяет выполнить все манипуляции
@@ -135,12 +152,35 @@ class PetClinicTest {
     }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
     //Наиболее лучшим решением будет добавить еще один метод для поиска, с joinFetch.
     @Test
     void joinFetchIsOk() {
         ownerRepository.getOwnersWithPets().forEach(e -> e.getPets().size());
         Assertions.assertThat(true).isTrue();
     }
+
+
+
+
+
+
+
+
+
+
+
 
     //На проектах с таблицами, в которых содержится очень много данных вряд ли будут запросы на поиск всех сущностей
     //Причины у этого две. Допустим в таблице один миллион строк:
@@ -193,7 +233,8 @@ class PetClinicTest {
                     result.put(ownerId, owner);
                     mapPet(rs, result, ownerId);
                     return null;
-                }, 0, 2);;
+                }, 0, 2);
+        ;
         result.values().forEach(System.out::println);
     }
 
