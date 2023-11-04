@@ -9,10 +9,10 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-@Entity
 @NoArgsConstructor
 @Getter
 @Setter
+@Entity
 public class Pet {
     @Id
     private long id;
