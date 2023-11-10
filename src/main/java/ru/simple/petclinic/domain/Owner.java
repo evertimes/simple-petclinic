@@ -6,12 +6,13 @@ import lombok.*;
 import java.util.HashSet;
 import java.util.Set;
 
-@Entity
+
 @NoArgsConstructor
 @Builder
 @AllArgsConstructor
 @Getter
 @Setter
+@Entity
 public class Owner {
     @Id
     private long id;
