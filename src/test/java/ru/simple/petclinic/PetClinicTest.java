@@ -2,21 +2,18 @@ package ru.simple.petclinic;
 
 import jakarta.transaction.Transactional;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import ru.simple.petclinic.domain.Owner;
 import ru.simple.petclinic.domain.Pet;
 import ru.simple.petclinic.repository.OwnerRepository;
 import ru.simple.petclinic.repository.PetRepository;
 
 import javax.sql.DataSource;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,47 +21,30 @@ import java.util.Map;
 @SpringBootTest
 class PetClinicTest {
     @Autowired
-    private PetRepository petRepository;
-    @Autowired
     private OwnerRepository ownerRepository;
     @Autowired
     private DataSource dataSource;
-    //Комменты уберем, версия с комментами будет тут https://www.notion.so/0122d78b0cd14392b0a70881e7cc640d?pvs=4
-
-
-
-
-
 
 
     @Test
-    void simpleCrud(){
-        ownerRepository.save(Owner.builder().id(3).name("Evgeniy").address("my address").build());
-
-        var owner = ownerRepository.findById(3L).get();
-        System.out.println(owner);
-        owner.setAddress("new address");
+    void simpleCrud() {
+        Owner owner = Owner.builder().id(10).address("my address").name("Евгений").build();
         ownerRepository.save(owner);
 
-        System.out.println(ownerRepository.findById(3L).get());
+        Owner owner1 = ownerRepository.findById(10L).get();
+        System.out.println(owner1);
 
-        ownerRepository.deleteById(3L);
-        System.out.println(ownerRepository.findById(3L).get());
+        owner1.setAddress("new address");
+        ownerRepository.save(owner1);
 
+        Owner owner2 = ownerRepository.findById(10L).get();
+        System.out.println(owner2);
+
+        ownerRepository.deleteById(10L);
+
+        Owner owner3 = ownerRepository.findById(10L).get();
+        System.out.println(owner3);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     //FetchType=eager на pet в owner
@@ -77,20 +57,6 @@ class PetClinicTest {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     //Попробуем поставить fetchType = Lazy, что бы питомцы не тащились, только когда нужно.
     //Получили один запрос на владельца. Все ок.
     @Test
@@ -100,24 +66,6 @@ class PetClinicTest {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     //Допустим теперь мы захотели посмотреть питомцев. Смотрим сколько у каждого владельца есть питомцев.
     //Тест падает - LazyInitException, т.к. у нас уже закрыта транзакция.
     @Test
@@ -125,19 +73,6 @@ class PetClinicTest {
         ownerRepository.findAll().forEach(e -> e.getPets().size());
         Assertions.assertThat(true).isTrue();
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     //Для таких целей можно использовать аннотацию transcational, которая позволяет выполнить все манипуляции
@@ -152,34 +87,12 @@ class PetClinicTest {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     //Наиболее лучшим решением будет добавить еще один метод для поиска, с joinFetch.
     @Test
     void joinFetchIsOk() {
-        ownerRepository.getOwnersWithPets().forEach(e -> e.getPets().size());
+        ownerRepository.findOwnersWithPets().forEach(e -> e.getPets().size());
         Assertions.assertThat(true).isTrue();
     }
-
-
-
-
-
-
-
-
-
-
 
 
     //На проектах с таблицами, в которых содержится очень много данных вряд ли будут запросы на поиск всех сущностей
@@ -207,7 +120,7 @@ class PetClinicTest {
     //Что делать? Писать SQL.
     @Test
     void paginationWithPetsIsNotOk() {
-        ownerRepository.getOwnersWithPets(PageRequest.of(0, 1));
+        ownerRepository.findOwnersWithPets(PageRequest.of(0, 1));
         Assertions.assertThat(true).isTrue();
     }
 
@@ -216,37 +129,42 @@ class PetClinicTest {
     @Test
     void paginationWithNativeIsOK() {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        Map<Long, Owner> result = new HashMap<>();
-        jdbcTemplate.query("SELECT o.id as owner_id, o.name as owner_name, o.address as owner_address, " +
+        Map<Long, Owner> result = jdbcTemplate.query(
+                "SELECT o.id as owner_id, o.name as owner_name, o.address as owner_address, " +
                         "p.id as pet_id, p.name as pet_name, p.date_of_birth as pet_date_of_birth " +
                         "from (SELECT id, name, address from owner offset ? rows fetch first ? rows only) o " +
                         "left join pet p on p.owner_id = o.id",
-                (RowMapper<Owner>) (rs, rowNum) -> {
-                    Long ownerId = rs.getLong("owner_id");
-                    if (result.containsKey(ownerId)) {
-                        mapPet(rs, result, ownerId);
-                        return null;
-                    }
-                    String name = rs.getString("owner_name");
-                    String address = rs.getString("owner_address");
-                    Owner owner = new Owner(ownerId, name, address);
-                    result.put(ownerId, owner);
-                    mapPet(rs, result, ownerId);
-                    return null;
-                }, 0, 2);
-        ;
+                resultSetExtractor, 0, 2);
         result.values().forEach(System.out::println);
     }
 
-    public void mapPet(ResultSet rs, Map<Long, Owner> result, Long ownerId) throws SQLException {
-        Long petId = rs.getLong("pet_id");
-        if (petId != null) {
-            String petName = rs.getString("pet_name");
-            LocalDateTime petDateOfBirth = rs.getTimestamp("pet_date_of_birth").toLocalDateTime();
-            Pet pet = new Pet(petId, petName, petDateOfBirth, null);
-            result.get(ownerId).addPet(pet);
-
+    private ResultSetExtractor<Map<Long, Owner>> resultSetExtractor = (rs) -> {
+        HashMap<Long, Owner> result = new HashMap<>();
+        while (rs.next()) {
+            Long ownerId = rs.getLong("owner_id");
+            if (result.containsKey(ownerId)) {
+                Long petId = rs.getLong("pet_id");
+                if (petId != 0) {
+                    String petName = rs.getString("pet_name");
+                    LocalDateTime petDateOfBirth = rs.getTimestamp("pet_date_of_birth").toLocalDateTime();
+                    Pet pet = new Pet(petId, petName, petDateOfBirth, null);
+                    result.get(ownerId).addPet(pet);
+                }
+            } else {
+                String name = rs.getString("owner_name");
+                String address = rs.getString("owner_address");
+                Owner owner = new Owner(ownerId, name, address);
+                result.put(ownerId, owner);
+                Long petId = rs.getLong("pet_id");
+                if (petId != 0) {
+                    String petName = rs.getString("pet_name");
+                    LocalDateTime petDateOfBirth = rs.getTimestamp("pet_date_of_birth").toLocalDateTime();
+                    Pet pet = new Pet(petId, petName, petDateOfBirth, null);
+                    result.get(ownerId).addPet(pet);
+                }
+            }
         }
-    }
+        return result;
+    };
 
 }

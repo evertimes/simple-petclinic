@@ -10,11 +10,9 @@ import java.util.Set;
 
 public interface OwnerRepository extends JpaRepository<Owner, Long> {
 
+    @Query("SELECT o FROM Owner o LEFT JOIN FETCH o.pets")
+    List<Owner> findOwnersWithPets();
 
     @Query("SELECT o FROM Owner o LEFT JOIN FETCH o.pets")
-    List<Owner> getOwnersWithPets();
-
-    @Query("SELECT o FROM Owner o LEFT JOIN FETCH o.pets")
-    List<Owner> getOwnersWithPets(Pageable pageable);
-
+    List<Owner> findOwnersWithPets(Pageable page);
 }
